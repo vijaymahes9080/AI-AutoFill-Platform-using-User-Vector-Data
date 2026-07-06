@@ -1343,3 +1343,75 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+
+// Simulated Cryptographic Key Derivation animation and mechanics
+window.runKeyDerivationAnimation = function() {
+  const passwordInput = document.getElementById("master-password-input");
+  if (!passwordInput) return;
+  
+  const passwordVal = passwordInput.value;
+  if (!passwordVal) {
+    showToast("Please enter a master password.");
+    return;
+  }
+  
+  const visualizer = document.getElementById("key-derivation-visualizer");
+  const statusEl = document.getElementById("derivation-status");
+  const pctEl = document.getElementById("derivation-pct");
+  const progressBar = document.getElementById("derivation-progress-bar");
+  const hexContainer = document.getElementById("derived-key-hex-container");
+  const hexEl = document.getElementById("derived-key-hex");
+  
+  if (!visualizer || !statusEl || !pctEl || !progressBar || !hexContainer || !hexEl) return;
+  
+  // Show visualizer and reset state
+  visualizer.classList.remove("hidden");
+  hexContainer.classList.add("hidden");
+  progressBar.style.width = "0%";
+  pctEl.textContent = "0%";
+  statusEl.textContent = "Deriving Salt...";
+  statusEl.className = "text-yellow-500";
+  
+  let currentPct = 0;
+  
+  const interval = setInterval(() => {
+    currentPct += 10;
+    progressBar.style.width = `${currentPct}%`;
+    pctEl.textContent = `${currentPct}%`;
+    
+    if (currentPct === 20) {
+      statusEl.textContent = "Running PBKDF2 cycle #1...";
+    } else if (currentPct === 50) {
+      statusEl.textContent = "Running PBKDF2 cycle #50000...";
+    } else if (currentPct === 80) {
+      statusEl.textContent = "Deriving 256-bit AES key material...";
+    } else if (currentPct === 100) {
+      clearInterval(interval);
+      
+      // Compute simple client-side SHA-256 visual mock hex based on password input
+      let hexKey = "";
+      let charSum = 0;
+      for (let i = 0; i < passwordVal.length; i++) {
+        charSum += passwordVal.charCodeAt(i) * (i + 1);
+      }
+      // Generate deterministic hex representing a 256-bit key (32 bytes = 64 hex characters)
+      for (let i = 0; i < 64; i++) {
+        const val = (charSum * (i + 3) + i * 7) % 16;
+        hexKey += val.toString(16);
+      }
+      
+      statusEl.textContent = "Success: Key Derived";
+      statusEl.className = "text-green-400 font-semibold";
+      hexEl.textContent = "0x" + hexKey.toUpperCase();
+      hexContainer.classList.remove("hidden");
+      
+      // Update app master password and re-seed/re-encrypt
+      app.masterPassword = passwordVal;
+      app.seedVectorEngine();
+      renderProfile(); // re-renders vault data to show updated ciphers/IVs!
+      
+      showToast("🔐 On-device key successfully derived. Vector Vault re-encrypted!", 3500);
+    }
+  }, 120);
+};
+
