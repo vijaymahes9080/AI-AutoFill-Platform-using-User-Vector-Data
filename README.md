@@ -66,3 +66,10 @@ Open the link in your browser to view the interactive dashboard.
 * **Client-Side Encryption**: Field values are converted to ciphertexts using keys derived on-device from the user's master password.
 * **Local Embeddings**: The semantic matching loop runs entirely in local memory (via local vector representations), keeping profile metrics isolated from public models.
 * **Audit Trail logs**: Logs all auto-fill attempts, domain patterns, field counts, and confidence scores locally for continuous user review.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](file:///d:/current project/AI AutoFill Platform using User Vector Data/LICENSE) file for details.
+
