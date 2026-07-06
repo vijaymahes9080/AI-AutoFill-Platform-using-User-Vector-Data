@@ -2,6 +2,10 @@
 
 AutoFlow AI is a next-generation personal data operating layer that automatically reads, remembers, and fills user details across web forms, apps, and dashboards. Using **vectorized user profiles** instead of fragile static autofill forms, it matches target field scopes with RAG query context while maintaining client-side zero-knowledge encryption guarantees.
 
+<p align="center">
+  <img src="assets/vector_vault_concept.png" alt="AutoFlow AI Universal Vector Vault Concept" width="800">
+</p>
+
 ---
 
 ## 🚀 Key Features
@@ -39,6 +43,10 @@ The platform replaces simple keyword matching with a local TF-IDF vector space:
 4. **Natural Event Injection**:
    Instead of updating element attributes directly (which triggers anti-bot blocking), the engine dispatches synthetic `input` and `change` events sequentially to emulate keystrokes.
 
+<p align="center">
+  <img src="assets/vector_rag_engine_flow.png" alt="On-Device Vector RAG Engine Flow" width="800">
+</p>
+
 ---
 
 ## ⚙️ How to Run Locally
@@ -66,6 +74,10 @@ Open the link in your browser to view the interactive dashboard.
 * **Client-Side Encryption**: Field values are converted to ciphertexts using keys derived on-device from the user's master password.
 * **Local Embeddings**: The semantic matching loop runs entirely in local memory (via local vector representations), keeping profile metrics isolated from public models.
 * **Audit Trail logs**: Logs all auto-fill attempts, domain patterns, field counts, and confidence scores locally for continuous user review.
+
+<p align="center">
+  <img src="assets/zero_knowledge_security.png" alt="Zero-Knowledge Security Model" width="800">
+</p>
 
 ---
 
