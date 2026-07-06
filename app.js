@@ -39,14 +39,14 @@ class VectorRAGEngine {
   }
 
   // Add document/profile item to Vector Store
-  addDocument(id, text, vectorType, category, key, label, value) {
-    const tokens = this.tokenize(`${key} ${label} ${text} ${value}`);
+  addDocument(id, text, vectorType, category, key, label, value, customSynonyms = "") {
+    const tokens = this.tokenize(`${key} ${label} ${text} ${value} ${customSynonyms}`);
     const freq = this.getTermFreq(tokens);
     const magnitude = this.getMagnitude(freq);
 
     this.vectors.push({
       id,
-      text,
+      text: text + (customSynonyms ? " " + customSynonyms : ""),
       vectorType, // 'identity', 'context', 'knowledge'
       category,   // 'personal', 'work', 'education', 'preference'
       key,
@@ -56,6 +56,27 @@ class VectorRAGEngine {
       freq,
       magnitude
     });
+  }
+
+  // Get detailed similarity scoring breakdown for Inspector
+  getDetailedSimilarityMatches(queryString) {
+    const queryTokens = this.tokenize(queryString);
+    if (queryTokens.length === 0) return [];
+
+    const queryFreq = this.getTermFreq(queryTokens);
+    const queryMagnitude = this.getMagnitude(queryFreq);
+
+    const matches = this.vectors.map(doc => {
+      const score = this.cosineSimilarity(queryFreq, queryMagnitude, doc);
+      const tokensMatched = doc.tokens.filter(t => queryFreq[t]);
+      return {
+        item: doc,
+        score: score,
+        tokensMatched: tokensMatched
+      };
+    });
+
+    return matches.sort((a, b) => b.score - a.score);
   }
 
   // Compute Cosine Similarity between query tokens and vector item
@@ -267,6 +288,8 @@ class AutoFlowApp {
     this.activePlaygroundForm = "job";
     this.isAutofilled = false;
     this.showFloatingPanel = true;
+    this.activeExtensionTab = "fill"; // Tab within Extension Panel: 'fill' or 'inspect'
+    this.selectedInspectorField = ""; // Active field being inspected
 
     // Load data from LocalStorage or seed defaults
     this.loadState();
@@ -278,6 +301,7 @@ class AutoFlowApp {
     this.documents = JSON.parse(localStorage.getItem('autoflow_docs')) || [ ...UPLOADED_DOCUMENTS ];
     this.permissions = JSON.parse(localStorage.getItem('autoflow_permissions')) || [ ...DEFAULT_PERMISSIONS ];
     this.auditLogs = JSON.parse(localStorage.getItem('autoflow_audit')) || [ ...SEED_AUDIT_LOGS ];
+    this.vectorSynonyms = JSON.parse(localStorage.getItem('autoflow_synonyms')) || {};
   }
 
   saveState() {
@@ -285,38 +309,49 @@ class AutoFlowApp {
     localStorage.setItem('autoflow_docs', JSON.stringify(this.documents));
     localStorage.setItem('autoflow_permissions', JSON.stringify(this.permissions));
     localStorage.setItem('autoflow_audit', JSON.stringify(this.auditLogs));
+    localStorage.setItem('autoflow_synonyms', JSON.stringify(this.vectorSynonyms));
+  }
+
+  // Register a custom vector synonym
+  addVectorSynonym(vectorId, synonymText) {
+    const current = this.vectorSynonyms[vectorId] || "";
+    this.vectorSynonyms[vectorId] = (current + " " + synonymText).trim();
+    this.saveState();
+    this.seedVectorEngine();
+    return true;
   }
 
   // Hydrate Vector Engine with active data
   seedVectorEngine() {
     this.ragEngine.vectors = []; // Reset
+    const getSyns = (id) => this.vectorSynonyms[id] || "";
 
     // 1. Index Profile Fields (Identity Vectors)
-    this.ragEngine.addDocument("p_name", "full name first name last name identity user", "identity", "personal", "fullName", "Full Name", this.profile.fullName);
-    this.ragEngine.addDocument("p_email", "email address contact mailbox receipt user", "identity", "personal", "email", "Email Address", this.profile.email);
-    this.ragEngine.addDocument("p_phone", "phone number telephone cell mobile contact number", "identity", "personal", "phone", "Phone Number", this.profile.phone);
-    this.ragEngine.addDocument("p_linkedin", "linkedin profile url social link work networking url", "identity", "personal", "linkedin", "LinkedIn URL", this.profile.linkedin);
-    this.ragEngine.addDocument("p_github", "github profile developer repo portfolio user code source link", "identity", "personal", "github", "GitHub Profile", this.profile.github);
-    this.ragEngine.addDocument("p_website", "personal website portfolio URL homepage domain link", "identity", "personal", "website", "Personal Website", this.profile.website);
-    this.ragEngine.addDocument("p_address", "address shipping billing office address street state city zipcode", "identity", "personal", "address", "Address", this.profile.address);
+    this.ragEngine.addDocument("p_name", "full name first name last name identity user", "identity", "personal", "fullName", "Full Name", this.profile.fullName, getSyns("p_name"));
+    this.ragEngine.addDocument("p_email", "email address contact mailbox receipt user", "identity", "personal", "email", "Email Address", this.profile.email, getSyns("p_email"));
+    this.ragEngine.addDocument("p_phone", "phone number telephone cell mobile contact number", "identity", "personal", "phone", "Phone Number", this.profile.phone, getSyns("p_phone"));
+    this.ragEngine.addDocument("p_linkedin", "linkedin profile url social link work networking url", "identity", "personal", "linkedin", "LinkedIn URL", this.profile.linkedin, getSyns("p_linkedin"));
+    this.ragEngine.addDocument("p_github", "github profile developer repo portfolio user code source link", "identity", "personal", "github", "GitHub Profile", this.profile.github, getSyns("p_github"));
+    this.ragEngine.addDocument("p_website", "personal website portfolio URL homepage domain link", "identity", "personal", "website", "Personal Website", this.profile.website, getSyns("p_website"));
+    this.ragEngine.addDocument("p_address", "address shipping billing office address street state city zipcode", "identity", "personal", "address", "Address", this.profile.address, getSyns("p_address"));
 
     // 2. Index Work Fields (Work Vectors)
-    this.ragEngine.addDocument("w_title", "job title role current title workspace desired position", "identity", "work", "jobTitle", "Job Title", this.profile.jobTitle);
-    this.ragEngine.addDocument("w_company", "organization company name business employer current workspace", "identity", "work", "company", "Company", this.profile.company);
-    this.ragEngine.addDocument("w_exp", "experience years professional job history background details", "identity", "work", "experience", "Work Experience", this.profile.experience);
-    this.ragEngine.addDocument("w_skills", "technical skills programming languages tech stack tools framework", "identity", "work", "skills", "Technical Skills", this.profile.skills);
-    this.ragEngine.addDocument("w_bio", "biography summary cover letter text about me professional profile summary", "identity", "work", "bio", "Professional Summary / Bio", this.profile.bio);
+    this.ragEngine.addDocument("w_title", "job title role current title workspace desired position", "identity", "work", "jobTitle", "Job Title", this.profile.jobTitle, getSyns("w_title"));
+    this.ragEngine.addDocument("w_company", "organization company name business employer current workspace", "identity", "work", "company", "Company", this.profile.company, getSyns("w_company"));
+    this.ragEngine.addDocument("w_exp", "experience years professional job history background details", "identity", "work", "experience", "Work Experience", this.profile.experience, getSyns("w_exp"));
+    this.ragEngine.addDocument("w_skills", "technical skills programming languages tech stack tools framework", "identity", "work", "skills", "Technical Skills", this.profile.skills, getSyns("w_skills"));
+    this.ragEngine.addDocument("w_bio", "biography summary cover letter text about me professional profile summary", "identity", "work", "bio", "Professional Summary / Bio", this.profile.bio, getSyns("w_bio"));
 
     // 3. Index Education
-    this.ragEngine.addDocument("e_edu", "education university college master degree cs study stanford qualification", "identity", "education", "education", "Education Details", this.profile.education);
-    this.ragEngine.addDocument("e_cert", "certifications awards credentials license AWS Solutions architect TensorFlow", "identity", "education", "certifications", "Certifications", this.profile.certifications);
+    this.ragEngine.addDocument("e_edu", "education university college master degree cs study stanford qualification", "identity", "education", "education", "Education Details", this.profile.education, getSyns("e_edu"));
+    this.ragEngine.addDocument("e_cert", "certifications awards credentials license AWS Solutions architect TensorFlow", "identity", "education", "certifications", "Certifications", this.profile.certifications, getSyns("e_cert"));
 
     // 4. Index Context preferences
-    this.ragEngine.addDocument("c_sal", "salary requirement expectation target compensation desired pay range", "context", "preference", "salaryExpectation", "Salary Expectation", this.profile.salaryExpectation);
-    this.ragEngine.addDocument("c_notice", "notice period resignation start date availability weeks days", "context", "preference", "noticePeriod", "Notice Period", this.profile.noticePeriod);
-    this.ragEngine.addDocument("c_setting", "work setting preference remote hybrid office environment location", "context", "preference", "workSetting", "Preferred Work Setting", this.profile.workSetting);
-    this.ragEngine.addDocument("c_sponsor", "sponsorship needed visa work authorization legal status", "context", "preference", "sponsorshipNeeded", "Sponsorship Needed", this.profile.sponsorshipNeeded);
-    this.ragEngine.addDocument("c_auth", "authorized to work legal permit US citizen work authorization", "context", "preference", "authorizedToWork", "Authorized to Work", this.profile.authorizedToWork);
+    this.ragEngine.addDocument("c_sal", "salary requirement expectation target compensation desired pay range", "context", "preference", "salaryExpectation", "Salary Expectation", this.profile.salaryExpectation, getSyns("c_sal"));
+    this.ragEngine.addDocument("c_notice", "notice period resignation start date availability weeks days", "context", "preference", "noticePeriod", "Notice Period", this.profile.noticePeriod, getSyns("c_notice"));
+    this.ragEngine.addDocument("c_setting", "work setting preference remote hybrid office environment location", "context", "preference", "workSetting", "Preferred Work Setting", this.profile.workSetting, getSyns("c_setting"));
+    this.ragEngine.addDocument("c_sponsor", "sponsorship needed visa work authorization legal status", "context", "preference", "sponsorshipNeeded", "Sponsorship Needed", this.profile.sponsorshipNeeded, getSyns("c_sponsor"));
+    this.ragEngine.addDocument("c_auth", "authorized to work legal permit US citizen work authorization", "context", "preference", "authorizedToWork", "Authorized to Work", this.profile.authorizedToWork, getSyns("c_auth"));
 
     // 5. Index Uploaded Documents (Knowledge Vectors)
     this.documents.forEach((doc, idx) => {
@@ -857,6 +892,11 @@ function updateExtensionOverlay() {
   const overlayContent = document.getElementById("extension-overlay-content");
   if (!overlayContent) return;
 
+  if (app.activeExtensionTab === "inspect") {
+    renderInspectorView(overlayContent);
+    return;
+  }
+
   const formMeta = FORM_PLAYGROUND_TEMPLATES[app.activePlaygroundForm];
   const fieldsMatches = app.scanFormFields(formMeta.fields);
 
@@ -940,6 +980,170 @@ function updateExtensionOverlay() {
 
   overlayContent.innerHTML = html;
 }
+
+// Render dynamic vector similarity inspector tab
+function renderInspectorView(container) {
+  const formMeta = FORM_PLAYGROUND_TEMPLATES[app.activePlaygroundForm];
+  const fields = formMeta.fields;
+  
+  if (!app.selectedInspectorField || !fields.find(f => f.id === app.selectedInspectorField)) {
+    app.selectedInspectorField = fields[0]?.id || "";
+  }
+  
+  const currentField = fields.find(f => f.id === app.selectedInspectorField);
+  if (!currentField) {
+    container.innerHTML = `<p class="text-xs text-gray-500">No fields available to inspect.</p>`;
+    return;
+  }
+  
+  // Extract query info and matches
+  const queryStr = `${currentField.id} ${currentField.label} ${currentField.placeholder || ''}`;
+  const queryTokens = app.ragEngine.tokenize(queryStr);
+  const matches = app.ragEngine.getDetailedSimilarityMatches(queryStr).slice(0, 3);
+  
+  let html = `
+    <div class="mb-4 bg-slate-900/80 border border-gray-800 rounded p-3 text-xs">
+      <div class="flex justify-between items-center mb-2.5">
+        <label class="text-xs font-bold text-gray-300">Target Field:</label>
+        <select onchange="changeInspectorField(this.value)" class="bg-slate-950 border border-gray-800 text-[11px] rounded p-1 text-indigo-300 font-semibold focus:outline-none">
+          ${fields.map(f => `<option value="${f.id}" ${f.id === app.selectedInspectorField ? 'selected' : ''}>${f.label}</option>`).join('')}
+        </select>
+      </div>
+      
+      <div class="mt-2.5 border-t border-gray-800/80 pt-2.5">
+        <span class="text-[10px] text-gray-500 font-mono">EXTRACTED QUERY STR:</span>
+        <div class="text-xs font-mono text-gray-300 bg-slate-950 p-1.5 rounded border border-gray-900 mt-1 truncate" title="${escapeHtml(queryStr)}">
+          "${escapeHtml(queryStr)}"
+        </div>
+      </div>
+      
+      <div class="mt-2 pt-2">
+        <span class="text-[10px] text-gray-500 font-mono">TOKENIZED KEYS:</span>
+        <div class="token-capsules-container mt-1">
+          ${queryTokens.length > 0 
+            ? queryTokens.map(t => `<span class="token-capsule">${escapeHtml(t)}</span>`).join('') 
+            : `<span class="text-[10px] text-gray-600 italic">None</span>`
+          }
+        </div>
+      </div>
+    </div>
+    
+    <div class="space-y-3 mb-4">
+      <span class="text-[10px] text-gray-500 font-mono block">COSINE SIMILARITY RADAR:</span>
+      ${matches.length > 0 ? matches.map((match, idx) => {
+        const scorePct = Math.round(match.score * 100);
+        let categoryClass = "low";
+        if (scorePct >= 80) categoryClass = "high";
+        else if (scorePct >= 50) categoryClass = "medium";
+        
+        return `
+          <div class="glass-card p-3 border border-gray-900 bg-slate-950/40 relative">
+            <div class="flex justify-between items-start mb-1.5">
+              <div>
+                <span class="text-xs font-semibold text-gray-200">${escapeHtml(match.item.label)}</span>
+                <span class="text-[8px] font-mono text-gray-500 ml-1.5 capitalize">(${match.item.category})</span>
+              </div>
+              <span class="text-[10px] font-mono font-bold ${scorePct >= 80 ? 'text-green-400' : scorePct >= 50 ? 'text-yellow-400' : 'text-rose-400'}">
+                ${scorePct}% Cos-Sim
+              </span>
+            </div>
+            <div class="text-[10px] text-gray-400 truncate mb-1">
+              Value: <strong class="text-gray-300 font-mono">${escapeHtml(match.item.value)}</strong>
+            </div>
+            <div class="similarity-bar-container">
+              <div class="similarity-bar-fill ${categoryClass}" style="width: ${scorePct}%"></div>
+            </div>
+            <div class="text-[8px] text-gray-600 font-mono mt-1.5 flex justify-between">
+              <span>Matched: ${match.tokensMatched.length > 0 ? escapeHtml(match.tokensMatched.join(', ')) : 'None'}</span>
+              <span>Ref ID: ${match.item.id}</span>
+            </div>
+          </div>
+        `;
+      }).join('') : `<p class="text-xs text-gray-500 italic">No matches found above threshold.</p>`}
+    </div>
+    
+    <!-- Calibration Widget -->
+    <div class="bg-slate-900/80 border border-gray-800 rounded p-3 text-xs">
+      <div class="flex justify-between items-center mb-1">
+        <span class="font-bold text-gray-300">Vector Calibration & Synonym Alignment</span>
+        <span class="text-[9px] text-violet-400 font-mono">Embed Context</span>
+      </div>
+      <p class="text-gray-500 text-[10px] leading-relaxed mb-2.5">
+        Associate new search synonyms with the best match vault item (${matches[0] ? escapeHtml(matches[0].item.label) : 'None'}) to auto-align.
+      </p>
+      
+      <div class="inspector-input-group">
+        <input type="text" id="synonym-input" placeholder="e.g. work-mailbox, resume-link" 
+               class="inspector-input" onkeydown="if(event.key==='Enter') executeVectorCalibration()">
+        <button onclick="executeVectorCalibration()" class="inspector-btn">Align</button>
+      </div>
+    </div>
+  `;
+  
+  container.innerHTML = html;
+}
+
+// Global scope helpers for Inspector tab
+window.setExtensionTab = function(tab) {
+  app.activeExtensionTab = tab;
+  
+  const fillBtn = document.getElementById("ext-tab-btn-fill");
+  const inspectBtn = document.getElementById("ext-tab-btn-inspect");
+  
+  if (tab === "fill") {
+    fillBtn?.classList.add("active");
+    fillBtn?.classList.add("bg-indigo-500/20", "text-indigo-300", "border-indigo-500/30");
+    fillBtn?.classList.remove("border-gray-800", "text-gray-500");
+    
+    inspectBtn?.classList.remove("active");
+    inspectBtn?.classList.remove("bg-indigo-500/20", "text-indigo-300", "border-indigo-500/30");
+    inspectBtn?.classList.add("border-gray-800", "text-gray-500");
+  } else {
+    inspectBtn?.classList.add("active");
+    inspectBtn?.classList.add("bg-indigo-500/20", "text-indigo-300", "border-indigo-500/30");
+    inspectBtn?.classList.remove("border-gray-800", "text-gray-500");
+    
+    fillBtn?.classList.remove("active");
+    fillBtn?.classList.remove("bg-indigo-500/20", "text-indigo-300", "border-indigo-500/30");
+    fillBtn?.classList.add("border-gray-800", "text-gray-500");
+  }
+  
+  updateExtensionOverlay();
+};
+
+window.changeInspectorField = function(fieldId) {
+  app.selectedInspectorField = fieldId;
+  updateExtensionOverlay();
+};
+
+window.executeVectorCalibration = function() {
+  const input = document.getElementById("synonym-input");
+  if (!input || !input.value.trim()) {
+    showToast("Please enter a valid synonym keyword.");
+    return;
+  }
+  
+  const formMeta = FORM_PLAYGROUND_TEMPLATES[app.activePlaygroundForm];
+  const currentField = formMeta.fields.find(f => f.id === app.selectedInspectorField);
+  if (!currentField) return;
+  
+  const queryStr = `${currentField.id} ${currentField.label} ${currentField.placeholder || ''}`;
+  const matches = app.ragEngine.getDetailedSimilarityMatches(queryStr).slice(0, 1);
+  
+  if (matches.length === 0) {
+    showToast("No target vector found to calibrate.");
+    return;
+  }
+  
+  const bestMatch = matches[0].item;
+  const synonymText = input.value.trim();
+  
+  app.addVectorSynonym(bestMatch.id, synonymText);
+  input.value = "";
+  
+  showToast(`Calibrated! Bound synonym '${synonymText}' to '${bestMatch.label}' vector vault field.`, 3500);
+  updateExtensionOverlay();
+};
 
 // Simulates the native-like typing events & visual green glows
 window.triggerAutoFillSimulation = function() {

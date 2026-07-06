@@ -168,7 +168,10 @@
                 <div class="ext-dot"></div>
                 <span class="ext-title">AutoFlow AI Ext</span>
               </div>
-              <span class="text-[10px] text-indigo-400 font-mono">v1.2.4</span>
+              <div class="flex gap-1">
+                <button id="ext-tab-btn-fill" onclick="setExtensionTab('fill')" class="ext-tab-btn active text-[10px] px-2 py-0.5 rounded font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 transition-all duration-300">Fill</button>
+                <button id="ext-tab-btn-inspect" onclick="setExtensionTab('inspect')" class="ext-tab-btn text-[10px] px-2 py-0.5 rounded font-mono border border-gray-800 text-gray-500 hover:text-gray-300 transition-all duration-300">Inspect</button>
+              </div>
             </div>
             
             <div class="p-4" id="extension-overlay-content">
