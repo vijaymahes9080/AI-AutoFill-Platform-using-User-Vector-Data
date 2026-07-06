@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoFlow AI — Universal Auto-Fill Dashboard & Simulator</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Tailwind is not loaded, styling strictly uses vanilla CSS in style.css. Tailwind utility names are mapped inside style.css or resolved locally for clean layout. -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-950 text-gray-100 min-h-screen">
+
+  <div class="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="app-sidebar">
+      <div class="logo-container flex flex-col items-start gap-1">
+        <div class="flex items-center gap-2">
+          <div class="logo-icon">⚡</div>
+          <span class="logo-text">AutoFlow AI</span>
+        </div>
+        <span class="logo-tag">Data Operating Layer</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-btn active" data-tab="dashboard">
+          <span>📁</span> Personal Vector Vault
+        </button>
+        <button class="nav-btn" data-tab="playground">
+          <span>⚡</span> Auto-Fill Playground
+        </button>
+        <button class="nav-btn" data-tab="permissions">
+          <span>🛡️</span> Access & Permissions
+        </button>
+        <button class="nav-btn" data-tab="tech-docs">
+          <span>⚙️</span> RAG & API Architecture
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-badge">
+          <div class="user-avatar">AW</div>
+          <div class="user-info">
+            <span class="user-name">Alexander Wright</span>
+            <span class="user-role">alex.vault.eth</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main View Content -->
+    <main class="app-content">
+
+      <!-- View 1: Personal Vector Vault Dashboard -->
+      <section id="dashboard-view" class="view-panel">
+        <header class="view-header">
+          <h2 class="view-title">Personal Vector Vault</h2>
+          <p class="view-subtitle">Manage your end-to-end encrypted identity, preferences, and unstructured knowledge files.</p>
+        </header>
+
+        <!-- Stats Overview Row -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div class="glass-card p-4 flex items-center justify-between">
+            <div>
+              <span class="text-xs text-gray-500 font-mono">TIME SAVED</span>
+              <h4 class="text-xl font-bold text-indigo-400 mt-1">4.2 Hours</h4>
+            </div>
+            <span class="text-2xl text-indigo-500/50">⏱️</span>
+          </div>
+          <div class="glass-card p-4 flex items-center justify-between">
+            <div>
+              <span class="text-xs text-gray-500 font-mono">VECTOR COUNT</span>
+              <h4 class="text-xl font-bold text-indigo-400 mt-1">32 Chunks</h4>
+            </div>
+            <span class="text-2xl text-indigo-500/50">🧬</span>
+          </div>
+          <div class="glass-card p-4 flex items-center justify-between">
+            <div>
+              <span class="text-xs text-gray-500 font-mono">CONNECTED APPS</span>
+              <h4 class="text-xl font-bold text-indigo-400 mt-1">12 Domains</h4>
+            </div>
+            <span class="text-2xl text-indigo-500/50">🌐</span>
+          </div>
+          <div class="glass-card p-4 flex items-center justify-between">
+            <div>
+              <span class="text-xs text-gray-500 font-mono">DECRYPTION KEY</span>
+              <h4 class="text-xl font-bold text-green-400 mt-1">PBKDF2 Sec</h4>
+            </div>
+            <span class="text-2xl text-green-500/50">🔑</span>
+          </div>
+        </div>
+
+        <div class="grid-container">
+          <!-- Profile Fields Column -->
+          <div class="col-span-2 space-y-6">
+            <div id="profile-fields-container">
+              <!-- Dynamically rendered via app.js -->
+            </div>
+          </div>
+
+          <!-- Document Upload & Sync Column -->
+          <div class="space-y-6">
+            <div class="glass-card p-6">
+              <h3 class="text-sm font-bold text-gray-300 border-b border-gray-800 pb-3 mb-4 flex justify-between items-center">
+                <span>Knowledge Base Documents</span>
+                <button onclick="simulateFileUpload()" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold">+ Upload Doc</button>
+              </h3>
+              <p class="text-xs text-gray-500 mb-4 leading-relaxed">
+                Upload resumes, certificates, and letters. We chunk, index, and load them into local memory vectors.
+              </p>
+              <div id="document-list" class="space-y-3">
+                <!-- Dynamically rendered via app.js -->
+              </div>
+            </div>
+
+            <div class="glass-card p-6">
+              <h3 class="text-sm font-bold text-gray-300 border-b border-gray-800 pb-3 mb-4">
+                Local Vault Configuration
+              </h3>
+              <div class="space-y-3 text-xs text-gray-400 leading-relaxed">
+                <div class="flex justify-between items-center py-1">
+                  <span>Security Mode:</span>
+                  <span class="text-green-400 font-semibold font-mono">Zero-Knowledge</span>
+                </div>
+                <div class="flex justify-between items-center py-1">
+                  <span>Local Embedding Model:</span>
+                  <span class="text-indigo-400 font-mono">all-MiniLM-L6-v2 (Local)</span>
+                </div>
+                <div class="flex justify-between items-center py-1">
+                  <span>Cloud Vector Sync:</span>
+                  <span class="text-green-400 font-mono">E2EE Enabled</span>
+                </div>
+                <div class="flex justify-between items-center py-1">
+                  <span>Auto-purge Inactive Sessions:</span>
+                  <span class="text-yellow-500 font-mono">After 15 mins</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 2: Auto-Fill Playground & Extension Simulator -->
+      <section id="playground-view" class="view-panel hidden">
+        <header class="view-header">
+          <h2 class="view-title">Auto-Fill Playground</h2>
+          <p class="view-subtitle">Select a target website simulator and observe how the floating browser extension handles scanning, security checking, and auto-filling.</p>
+        </header>
+
+        <div class="playground-header">
+          <button onclick="selectPlaygroundForm('job')" class="form-selector-btn bg-indigo-500/20 border-indigo-500 text-white font-semibold" data-form="job">Job Application Form</button>
+          <button onclick="selectPlaygroundForm('onboarding')" class="form-selector-btn border-gray-800 text-gray-400" data-form="onboarding">SaaS Workspace Onboarding</button>
+          <button onclick="selectPlaygroundForm('ecommerce')" class="form-selector-btn border-gray-800 text-gray-400" data-form="ecommerce">Payment & Billing Form</button>
+        </div>
+
+        <div class="playground-grid">
+          <!-- Webpage Iframe Mock Container -->
+          <div class="glass-card p-6 border-gray-800 flex flex-col justify-between">
+            <div id="simulated-web-form">
+              <!-- Dynamically rendered playground html form -->
+            </div>
+          </div>
+
+          <!-- Chrome Extension Floating Box -->
+          <div class="extension-container">
+            <div class="extension-header">
+              <div class="ext-badge">
+                <div class="ext-dot"></div>
+                <span class="ext-title">AutoFlow AI Ext</span>
+              </div>
+              <span class="text-[10px] text-indigo-400 font-mono">v1.2.4</span>
+            </div>
+            
+            <div class="p-4" id="extension-overlay-content">
+              <!-- Dynamically rendered extension content -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 3: Access & Permissions Tab -->
+      <section id="permissions-view" class="view-panel hidden">
+        <header class="view-header">
+          <h2 class="view-title">Access & Smart Permissions</h2>
+          <p class="view-subtitle">Review active token approvals, domain authorization policies, and continuous audit logs.</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="col-span-2 glass-card p-6">
+            <h3 class="text-sm font-bold text-gray-300 border-b border-gray-800 pb-3 mb-4 flex justify-between items-center">
+              <span>Domain Level Permissions</span>
+              <span class="text-[11px] text-gray-500 font-mono">Active Consent Policies</span>
+            </h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left">
+                <thead>
+                  <tr class="border-b border-gray-800 text-xs text-gray-500 uppercase">
+                    <th class="py-2 px-4 font-mono font-normal">Domain Pattern</th>
+                    <th class="py-2 px-4 font-mono font-normal">Scope Allowed</th>
+                    <th class="py-2 px-4 font-mono font-normal">Permission Policy</th>
+                    <th class="py-2 px-4 font-mono font-normal">Status</th>
+                    <th class="py-2 px-4 font-mono font-normal">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="permissions-table-body">
+                  <!-- Dynamically rendered via app.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="glass-card p-6">
+            <h3 class="text-sm font-bold text-gray-300 border-b border-gray-800 pb-3 mb-4">
+              Continuous Audit Logs
+            </h3>
+            <div id="audit-logs-container" class="space-y-4 max-h-96 overflow-y-auto pr-1">
+              <!-- Dynamically rendered via app.js -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 4: Technology RAG & Architecture Docs Tab -->
+      <section id="tech-docs-view" class="view-panel hidden">
+        <header class="view-header">
+          <h2 class="view-title">System Architecture & RAG Pipeline</h2>
+          <p class="view-subtitle">Explore database schemas, vector indexing flows, and backend cryptographic API specs.</p>
+        </header>
+
+        <div id="tech-docs-container">
+          <!-- Dynamically rendered via app.js -->
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Chunks Modal -->
+  <div id="chunks-modal" class="modal-overlay hidden">
+    <div class="glass-card modal-content p-6 border-indigo-500">
+      <div class="flex justify-between items-center border-b border-gray-800 pb-3 mb-4">
+        <h3 class="text-sm font-bold text-indigo-400 font-mono" id="modal-doc-title">Document Name</h3>
+        <button onclick="closeChunksModal()" class="text-gray-500 hover:text-gray-300 text-sm">✖ Close</button>
+      </div>
+      <ul id="modal-chunks-list" class="space-y-3">
+        <!-- Chunks list -->
+      </ul>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Core JS scripts -->
+  <script src="app.js"></script>
+  <script>
+    // Overriding specific links inside HTML to handle view pane mapping correctly
+    document.querySelectorAll('.sidebar-nav .nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.getAttribute('data-tab');
+        
+        // Hide all views
+        document.querySelectorAll('.view-panel').forEach(p => p.classList.add('hidden'));
+        
+        // Show target view
+        const targetId = tab === 'tech-docs' ? 'tech-docs-view' : `${tab}-view`;
+        const view = document.getElementById(targetId);
+        if (view) view.classList.remove('hidden');
+
+        // Toggle active button style
+        document.querySelectorAll('.sidebar-nav .nav-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Render target specific view data
+        if (tab === 'tech-docs') {
+          renderTechDocs();
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "autoflow-ai",
+  "version": "1.0.0",
+  "description": "Universal Intelligent Auto-Fill Ecosystem using Vector Identity",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx -y http-server -p 8080 -c-1"
+  },
+  "keywords": [],
+  "author": "Vijay Mahes <Vijaypradhap2004@gmail.com>",
+  "license": "ISC"
+}
